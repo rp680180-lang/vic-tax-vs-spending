@@ -9,6 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  Cell,
 } from "recharts";
 import { linearRegression } from "@/lib/analysis";
 
@@ -54,16 +55,11 @@ export default function ScatterPlot({
   const yValues = data.map((d) => d.y);
   const regression = linearRegression(xValues, yValues);
 
-  // Group by region
-  const grouped = new Map<string, typeof data>();
-  for (const d of data) {
-    const region = d.region || "Other";
-    if (!grouped.has(region)) grouped.set(region, []);
-    grouped.get(region)!.push(d);
-  }
-
   const xMin = Math.min(...xValues);
   const xMax = Math.max(...xValues);
+
+  // Collect unique regions for legend
+  const regions = Array.from(new Set(data.map((d) => d.region || "Other")));
 
   return (
     <div className="bg-slate-800 rounded-xl p-4">
@@ -76,44 +72,47 @@ export default function ScatterPlot({
         </div>
       )}
       <ResponsiveContainer width="100%" height={400}>
-        <ScatterChart margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
+        <ScatterChart margin={{ top: 10, right: 20, left: 10, bottom: 30 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
           <XAxis
             dataKey="x"
             type="number"
             name={xLabel}
             tick={{ fill: "#94a3b8", fontSize: 11 }}
-            label={{ value: xLabel, position: "insideBottom", offset: -5, fill: "#94a3b8" }}
+            label={{ value: xLabel, position: "insideBottom", offset: -15, fill: "#94a3b8", fontSize: 12 }}
           />
           <YAxis
             dataKey="y"
             type="number"
             name={yLabel}
             tick={{ fill: "#94a3b8", fontSize: 11 }}
-            label={{ value: yLabel, angle: -90, position: "insideLeft", fill: "#94a3b8" }}
+            label={{ value: yLabel, angle: -90, position: "insideLeft", fill: "#94a3b8", fontSize: 12 }}
           />
           <Tooltip
             content={({ payload }) => {
               if (!payload || payload.length === 0) return null;
-              const d = payload[0].payload;
+              const d = payload[0]?.payload;
+              if (!d) return null;
               return (
                 <div className="bg-slate-900 border border-slate-600 rounded-lg p-2 text-xs">
                   <p className="text-white font-medium">{d.label}</p>
-                  <p className="text-slate-400">{xLabel}: ${d.x.toFixed(1)}M</p>
-                  <p className="text-slate-400">{yLabel}: ${d.y.toFixed(1)}M</p>
+                  <p className="text-slate-400">{d.region}</p>
+                  <p className="text-slate-400">{xLabel}: {d.x.toFixed(1)}</p>
+                  <p className="text-slate-400">{yLabel}: {d.y.toFixed(1)}</p>
                 </div>
               );
             }}
           />
-          {Array.from(grouped.entries()).map(([region, points]) => (
-            <Scatter
-              key={region}
-              name={region}
-              data={points}
-              fill={REGION_COLORS[region] || "#94a3b8"}
-              opacity={0.8}
-            />
-          ))}
+          <Scatter data={data} isAnimationActive={false}>
+            {data.map((entry, index) => (
+              <Cell
+                key={index}
+                fill={REGION_COLORS[entry.region || "Other"] || "#94a3b8"}
+                fillOpacity={0.8}
+                r={5}
+              />
+            ))}
+          </Scatter>
           {showTrendLine && (
             <ReferenceLine
               segment={[
@@ -127,6 +126,20 @@ export default function ScatterPlot({
           )}
         </ScatterChart>
       </ResponsiveContainer>
+      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
+        {regions.slice(0, 10).map((region) => (
+          <div key={region} className="flex items-center gap-1">
+            <div
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: REGION_COLORS[region] || "#94a3b8" }}
+            />
+            <span className="text-[10px] text-slate-400">{region}</span>
+          </div>
+        ))}
+        {regions.length > 10 && (
+          <span className="text-[10px] text-slate-500">+{regions.length - 10} more</span>
+        )}
+      </div>
     </div>
   );
 }
