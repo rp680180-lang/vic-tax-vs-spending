@@ -87,7 +87,7 @@ export default function WelfarePage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <PostcodeMap data={mapData} colorScale="red" title="Welfare Recipients by Region (Mar 2025)" />
+        <PostcodeMap data={mapData} colorScale="red" title="Welfare Recipients by Region (Mar 2025)" unit="recipients" />
         <RegionChart
           data={categoryData}
           bars={[{ key: "Recipients", color: "#f472b6", name: "Recipients" }]}

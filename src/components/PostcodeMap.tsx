@@ -13,6 +13,7 @@ interface PostcodeMapProps {
   data: MapDataPoint[];
   colorScale?: "blue" | "green" | "red" | "diverging";
   title?: string;
+  unit?: string;
 }
 
 function getColor(t: number, colorScale: string): string {
@@ -33,7 +34,23 @@ function getColor(t: number, colorScale: string): string {
   }
 }
 
-export default function PostcodeMap({ data, colorScale = "blue", title }: PostcodeMapProps) {
+function formatValue(val: number, unit: string): string {
+  if (unit === "$M") {
+    if (Math.abs(val) >= 1000) return `$${(val / 1000).toFixed(1)}B`;
+    return `$${val.toFixed(0)}M`;
+  }
+  if (unit === "recipients") {
+    if (val >= 1e6) return `${(val / 1e6).toFixed(1)}M`;
+    if (val >= 1e3) return `${(val / 1e3).toFixed(1)}K`;
+    return val.toFixed(0);
+  }
+  // Default
+  if (val >= 1e6) return `${(val / 1e6).toFixed(1)}M`;
+  if (val >= 1e3) return `${(val / 1e3).toFixed(1)}K`;
+  return val.toFixed(0);
+}
+
+export default function PostcodeMap({ data, colorScale = "blue", title, unit = "" }: PostcodeMapProps) {
   const { regionRows, minVal, maxVal } = useMemo(() => {
     const values = data.map((d) => d.value);
     const min = Math.min(...values);
@@ -82,7 +99,7 @@ export default function PostcodeMap({ data, colorScale = "blue", title }: Postco
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-slate-200 truncate">{row.region}</span>
                     <span className="text-xs font-mono text-slate-300 ml-2">
-                      {row.total >= 1000 ? `${(row.total / 1000).toFixed(1)}K` : row.total.toFixed(0)}
+                      {formatValue(row.total, unit)}
                     </span>
                   </div>
                   <div className="w-full bg-slate-700 rounded-full h-1.5 mt-0.5">
@@ -99,7 +116,7 @@ export default function PostcodeMap({ data, colorScale = "blue", title }: Postco
               <div className="ml-5 mt-0.5 flex gap-3">
                 {row.topPostcodes.map((pc) => (
                   <span key={pc.postcode} className="text-[10px] text-slate-500">
-                    {pc.postcode}: {pc.value >= 1000 ? `${(pc.value / 1000).toFixed(1)}K` : pc.value.toFixed(0)}
+                    {pc.postcode}: {formatValue(pc.value, unit)}
                   </span>
                 ))}
               </div>
@@ -108,14 +125,14 @@ export default function PostcodeMap({ data, colorScale = "blue", title }: Postco
         })}
       </div>
       <div className="mt-4 flex items-center gap-2">
-        <span className="text-[10px] text-slate-500">{minVal.toFixed(0)}</span>
+        <span className="text-[10px] text-slate-500">{formatValue(minVal, unit)}</span>
         <div
           className="flex-1 h-2 rounded-full"
           style={{
             background: `linear-gradient(to right, ${getColor(0, colorScale)}, ${getColor(0.5, colorScale)}, ${getColor(1, colorScale)})`,
           }}
         />
-        <span className="text-[10px] text-slate-500">{maxVal.toFixed(0)}</span>
+        <span className="text-[10px] text-slate-500">{formatValue(maxVal, unit)}</span>
       </div>
     </div>
   );

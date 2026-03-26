@@ -90,7 +90,7 @@ export default function TaxPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <PostcodeMap data={mapData} colorScale="blue" title={`Tax Paid by Region (${year})`} />
+        <PostcodeMap data={mapData} colorScale="blue" title={`Tax Paid by Region (${year})`} unit="$M" />
         <RegionChart
           data={regionData}
           bars={[{ key: "Tax Paid ($M)", color: "#60a5fa", name: "Tax Paid ($M)" }]}
