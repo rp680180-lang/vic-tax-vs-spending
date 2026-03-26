@@ -84,9 +84,9 @@ export default function OverviewPage() {
     region: d.region,
   }));
 
-  const taxVsWelfareRecipients = regionScatter.map((d) => ({
-    x: Math.round(d.taxPaid / 1e6),
-    y: d.welfareRecipients,
+  const taxPerCapitaVsWelfareRate = regionScatter.map((d) => ({
+    x: Math.round(d.taxPaid / d.individuals),
+    y: Math.round(d.welfareRate * 1000) / 10,
     label: d.region,
     region: d.region,
   }));
@@ -128,10 +128,10 @@ export default function OverviewPage() {
           title={`Income vs Welfare Rate by Region (${year}) — r = ${corrCoeff.toFixed(3)}`}
         />
         <ScatterPlot
-          data={taxVsWelfareRecipients}
-          xLabel="Tax Paid ($M)"
-          yLabel="Welfare Recipients"
-          title={`Tax Paid vs Welfare Recipients by Region (${year})`}
+          data={taxPerCapitaVsWelfareRate}
+          xLabel="Tax Paid Per Taxpayer ($)"
+          yLabel="Welfare Recipients / 10 Taxpayers"
+          title={`Tax Per Capita vs Welfare Rate by Region (${year})`}
         />
       </div>
 

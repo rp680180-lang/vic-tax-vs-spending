@@ -68,9 +68,9 @@ export default function CorrelationsPage() {
     label: d.region, region: d.region,
   }));
 
-  const taxVsWelfareCost = regions.filter((d) => d.welfareCost > 0).map((d) => ({
-    x: Math.round(d.taxPaid / 1e6),
-    y: Math.round(d.welfareCost / 1e6),
+  const taxPerCapitaVsWelfareRate = regions.filter((d) => d.welfareRecipients > 0).map((d) => ({
+    x: Math.round(d.taxPaid / d.individuals),
+    y: Math.round(d.welfareRecipients / d.individuals * 1000) / 10,
     label: d.region, region: d.region,
   }));
 
@@ -135,10 +135,10 @@ export default function CorrelationsPage() {
           title={`Income vs Welfare Dependency (${year})`}
         />
         <ScatterPlot
-          data={taxVsWelfareCost}
-          xLabel="Tax Paid ($M)"
-          yLabel="Est. Welfare Cost ($M)"
-          title={`Tax Paid vs Welfare Cost (${year})`}
+          data={taxPerCapitaVsWelfareRate}
+          xLabel="Tax Paid Per Taxpayer ($)"
+          yLabel="Welfare Recipients / 10 Taxpayers"
+          title={`Tax Per Capita vs Welfare Rate (${year})`}
         />
       </div>
 
