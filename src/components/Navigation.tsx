@@ -5,11 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Overview" },
+  { href: "/", label: "Overview & Correlations" },
   { href: "/tax", label: "Tax Revenue" },
-  { href: "/federal", label: "Federal Spending" },
-  { href: "/state", label: "State Spending" },
-  { href: "/correlations", label: "Correlations" },
+  { href: "/federal", label: "Welfare Payments" },
+  { href: "/correlations", label: "Deep Analysis" },
 ];
 
 export default function Navigation() {
@@ -23,7 +22,6 @@ export default function Navigation() {
           <Link href="/" className="text-white font-bold text-lg">
             VIC Tax vs Spending
           </Link>
-          {/* Desktop nav */}
           <div className="hidden md:flex gap-1">
             {NAV_ITEMS.map((item) => (
               <Link
@@ -39,7 +37,6 @@ export default function Navigation() {
               </Link>
             ))}
           </div>
-          {/* Mobile hamburger */}
           <button
             className="md:hidden text-slate-300 hover:text-white p-2"
             onClick={() => setOpen(!open)}
@@ -55,7 +52,6 @@ export default function Navigation() {
           </button>
         </div>
       </div>
-      {/* Mobile dropdown */}
       {open && (
         <div className="md:hidden border-t border-slate-700 px-4 pb-3 pt-2 space-y-1">
           {NAV_ITEMS.map((item) => (

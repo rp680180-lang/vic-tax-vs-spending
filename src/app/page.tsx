@@ -1,135 +1,155 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { VICTORIAN_POSTCODES } from "@/data/postcodes";
-import { TAX_REVENUE_DATA } from "@/data/tax-revenue";
-import { FEDERAL_SPENDING_DATA } from "@/data/federal-spending";
-import { STATE_SPENDING_DATA } from "@/data/state-spending";
+import { TAX_REVENUE_DATA, TAX_YEARS } from "@/data/tax-revenue";
+import { WELFARE_DATA } from "@/data/welfare-spending";
+import { getRegion } from "@/data/postcodes";
+import { pearsonCorrelation } from "@/lib/analysis";
 import StatCard from "@/components/StatCard";
 import TimeSeriesChart from "@/components/TimeSeriesChart";
-import PostcodeMap from "@/components/PostcodeMap";
+import ScatterPlot from "@/components/ScatterPlot";
 import YearSlider from "@/components/YearSlider";
 
 export default function OverviewPage() {
-  const [year, setYear] = useState(2023);
+  const [yearIdx, setYearIdx] = useState(TAX_YEARS.length - 1);
+  const year = TAX_YEARS[yearIdx];
 
   const yearTax = useMemo(
-    () => TAX_REVENUE_DATA.filter((d) => d.year === year),
-    [year]
-  );
-  const yearFederal = useMemo(
-    () => FEDERAL_SPENDING_DATA.filter((d) => d.year === year),
-    [year]
-  );
-  const yearState = useMemo(
-    () => STATE_SPENDING_DATA.filter((d) => d.year === year),
+    () => TAX_REVENUE_DATA.filter((d) => d.financialYear === year),
     [year]
   );
 
-  const totalTax = yearTax.reduce((sum, d) => sum + d.totalTaxPaid, 0);
-  const totalFederal = yearFederal.reduce((sum, d) => sum + d.total, 0);
-  const totalState = yearState.reduce((sum, d) => sum + d.total, 0);
-  const totalSpending = totalFederal + totalState;
-  const ratio = totalTax > 0 ? totalSpending / totalTax : 0;
+  const totalTaxPaid = yearTax.reduce((s, d) => s + d.taxPaid, 0);
+  const totalTaxableIncome = yearTax.reduce((s, d) => s + d.taxableIncome, 0);
+  const totalIndividuals = yearTax.reduce((s, d) => s + d.individuals, 0);
+  const totalWelfareRecipients = WELFARE_DATA.reduce((s, d) => s + d.totalRecipients, 0);
 
-  // Time series: aggregate by year
+  // Time series
   const timeSeries = useMemo(() => {
-    const years = Array.from({ length: 10 }, (_, i) => 2014 + i);
-    return years.map((y) => {
-      const tax = TAX_REVENUE_DATA.filter((d) => d.year === y).reduce((s, d) => s + d.totalTaxPaid, 0);
-      const fed = FEDERAL_SPENDING_DATA.filter((d) => d.year === y).reduce((s, d) => s + d.total, 0);
-      const state = STATE_SPENDING_DATA.filter((d) => d.year === y).reduce((s, d) => s + d.total, 0);
+    return TAX_YEARS.map((fy) => {
+      const yd = TAX_REVENUE_DATA.filter((d) => d.financialYear === fy);
+      const taxPaid = yd.reduce((s, d) => s + d.taxPaid, 0);
+      const taxableIncome = yd.reduce((s, d) => s + d.taxableIncome, 0);
+      const individuals = yd.reduce((s, d) => s + d.individuals, 0);
       return {
-        year: y.toString(),
-        "Tax Revenue": Math.round(tax),
-        "Federal Spending": Math.round(fed),
-        "State Spending": Math.round(state),
-        "Total Spending": Math.round(fed + state),
+        year: fy,
+        "Tax Paid ($B)": Math.round(taxPaid / 1e9 * 10) / 10,
+        "Taxable Income ($B)": Math.round(taxableIncome / 1e9 * 10) / 10,
+        "Avg Income ($K)": Math.round(taxableIncome / individuals / 1000 * 10) / 10,
       };
     });
   }, []);
 
-  // Net position map (tax paid - total spending per postcode)
-  const netPositionMap = useMemo(() => {
-    return VICTORIAN_POSTCODES.map((pc) => {
-      const tax = yearTax.find((d) => d.postcode === pc.postcode)?.totalTaxPaid || 0;
-      const fed = yearFederal.find((d) => d.postcode === pc.postcode)?.total || 0;
-      const state = yearState.find((d) => d.postcode === pc.postcode)?.total || 0;
-      return {
-        postcode: pc.postcode,
-        value: tax - (fed + state),
-        label: `${pc.suburb}: Net $${(tax - fed - state).toFixed(1)}M`,
-      };
-    });
-  }, [yearTax, yearFederal, yearState]);
+  // Key correlation: Tax paid per postcode vs welfare recipients per postcode
+  const taxVsWelfare = useMemo(() => {
+    const welfareMap = new Map(WELFARE_DATA.map((d) => [d.postcode, d]));
+    return yearTax
+      .filter((d) => welfareMap.has(d.postcode))
+      .map((d) => {
+        const w = welfareMap.get(d.postcode)!;
+        return {
+          x: d.medianTaxableIncome / 1000,
+          y: w.totalRecipients,
+          label: d.postcode,
+          region: getRegion(d.postcode),
+        };
+      });
+  }, [yearTax]);
+
+  // Per-capita correlation: median income vs welfare recipients per individual
+  const incomeVsWelfareRate = useMemo(() => {
+    const welfareMap = new Map(WELFARE_DATA.map((d) => [d.postcode, d]));
+    return yearTax
+      .filter((d) => welfareMap.has(d.postcode) && d.individuals > 100)
+      .map((d) => {
+        const w = welfareMap.get(d.postcode)!;
+        return {
+          x: d.medianTaxableIncome / 1000,
+          y: Math.round(w.totalRecipients / d.individuals * 1000) / 10,
+          label: d.postcode,
+          region: getRegion(d.postcode),
+        };
+      });
+  }, [yearTax]);
+
+  // Correlation coefficient
+  const corrCoeff = useMemo(() => {
+    if (incomeVsWelfareRate.length === 0) return 0;
+    return pearsonCorrelation(
+      incomeVsWelfareRate.map((d) => d.x),
+      incomeVsWelfareRate.map((d) => d.y)
+    );
+  }, [incomeVsWelfareRate]);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Victoria: Tax vs Public Spending</h1>
         <p className="text-slate-400 text-sm mt-1">
-          Analysing the relationship between tax revenue collected and government spending
-          allocated across {VICTORIAN_POSTCODES.length} Victorian postcodes from 2014 to 2023.
+          Real ATO tax statistics and DSS welfare payment data across ~700 Victorian postcodes.
         </p>
-        <p className="text-slate-500 text-xs mt-2 italic">
-          Data is modelled on ATO Taxation Statistics and Commonwealth/Victorian Budget Paper patterns.
-          Figures are illustrative and should not be cited as official statistics.
+        <p className="text-xs text-slate-500 mt-1">
+          Tax data: ATO Individual Tax Statistics (Table 6B), 2014-15 to 2022-23.
+          Welfare data: DSS Payment Demographics, March 2025 snapshot.
         </p>
       </div>
 
-      <YearSlider year={year} onChange={setYear} />
+      <YearSlider year={yearIdx} onChange={setYearIdx} min={0} max={TAX_YEARS.length - 1} labels={TAX_YEARS} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           title="Total Tax Paid"
-          value={`$${(totalTax / 1000).toFixed(1)}B`}
-          subtitle={`${year}`}
-          trend="up"
-          trendValue={year > 2014 ? `from ${2014}` : undefined}
+          value={`$${(totalTaxPaid / 1e9).toFixed(1)}B`}
+          subtitle={year}
         />
         <StatCard
-          title="Federal Spending"
-          value={`$${(totalFederal / 1000).toFixed(1)}B`}
-          subtitle={`${year}`}
+          title="Total Taxable Income"
+          value={`$${(totalTaxableIncome / 1e9).toFixed(0)}B`}
+          subtitle={year}
         />
         <StatCard
-          title="State Spending"
-          value={`$${(totalState / 1000).toFixed(1)}B`}
-          subtitle={`${year}`}
+          title="Taxpayers"
+          value={`${(totalIndividuals / 1e6).toFixed(2)}M`}
+          subtitle={year}
         />
         <StatCard
-          title="Spending / Tax Ratio"
-          value={`${ratio.toFixed(2)}x`}
-          subtitle={ratio > 1 ? "Spending > Tax" : "Tax > Spending"}
-          trend={ratio > 1 ? "up" : "down"}
-          trendValue={`${((ratio - 1) * 100).toFixed(0)}% ${ratio > 1 ? "surplus spend" : "surplus tax"}`}
+          title="Welfare Recipients"
+          value={`${(totalWelfareRecipients / 1000).toFixed(0)}K`}
+          subtitle="Mar 2025"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TimeSeriesChart
-          data={timeSeries}
-          lines={[
-            { key: "Tax Revenue", color: "#60a5fa", name: "Tax Revenue" },
-            { key: "Federal Spending", color: "#f472b6", name: "Federal Spending" },
-            { key: "State Spending", color: "#34d399", name: "State Spending" },
-          ]}
-          title="Total Tax Revenue vs Government Spending (2014-2023)"
-          yLabel="$M"
+        <ScatterPlot
+          data={incomeVsWelfareRate}
+          xLabel="Median Taxable Income ($K)"
+          yLabel="Welfare Recipients per 10 Taxpayers"
+          title={`Income vs Welfare Dependency Rate by Postcode (${year}) — r = ${corrCoeff.toFixed(3)}`}
         />
-        <PostcodeMap
-          data={netPositionMap}
-          colorScale="diverging"
-          title={`Net Fiscal Position by Postcode (${year}) — Red = net receiver, Blue = net contributor`}
+        <ScatterPlot
+          data={taxVsWelfare}
+          xLabel="Median Taxable Income ($K)"
+          yLabel="Total Welfare Recipients"
+          title={`Median Income vs Welfare Recipients by Postcode (${year})`}
         />
       </div>
 
+      <TimeSeriesChart
+        data={timeSeries}
+        lines={[
+          { key: "Tax Paid ($B)", color: "#60a5fa", name: "Tax Paid ($B)" },
+          { key: "Taxable Income ($B)", color: "#34d399", name: "Taxable Income ($B)" },
+        ]}
+        title="Victorian Tax Revenue Over Time (ATO Data)"
+        yLabel="$B"
+      />
+
       <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-        <h3 className="text-sm font-medium text-slate-300 mb-2">About this analysis</h3>
+        <h3 className="text-sm font-medium text-slate-300 mb-2">Data Sources</h3>
         <div className="text-xs text-slate-400 space-y-1">
-          <p>This dashboard explores the fiscal relationship between Victorian postcodes — how much tax is collected vs how much government spending flows back.</p>
-          <p>Use the tabs above to explore <strong>Tax Revenue</strong>, <strong>Federal Spending</strong>, and <strong>State Spending</strong> separately, or visit <strong>Correlations</strong> to see statistical relationships.</p>
-          <p>Key patterns to look for: Do high-income postcodes contribute disproportionately more in tax? Do lower-income areas receive more welfare spending? How did COVID-19 affect the balance?</p>
+          <p><strong>Tax Revenue:</strong> ATO Taxation Statistics — Individual Tax Return data by postcode (Table 6B). 9 financial years from 2014-15 to 2022-23. ~700 Victorian postcodes per year.</p>
+          <p><strong>Welfare Spending:</strong> DSS Benefit and Payment Recipient Demographics by postcode (March 2025 snapshot). Shows recipient counts for JobSeeker, Age Pension, DSP, Family Tax Benefit, and other payments.</p>
+          <p><strong>Note:</strong> Infrastructure, education, and health spending are not available at postcode level from any government source. Welfare recipient counts (not dollar amounts) are used; estimated costs use standard payment rates.</p>
         </div>
       </div>
     </div>

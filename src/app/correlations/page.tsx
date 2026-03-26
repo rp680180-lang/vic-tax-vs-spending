@@ -1,169 +1,190 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { VICTORIAN_POSTCODES } from "@/data/postcodes";
-import { TAX_REVENUE_DATA } from "@/data/tax-revenue";
-import { FEDERAL_SPENDING_DATA } from "@/data/federal-spending";
-import { STATE_SPENDING_DATA } from "@/data/state-spending";
+import { TAX_REVENUE_DATA, TAX_YEARS } from "@/data/tax-revenue";
+import { WELFARE_DATA, estimateWelfareCost } from "@/data/welfare-spending";
+import { getRegion } from "@/data/postcodes";
 import { pearsonCorrelation } from "@/lib/analysis";
 import ScatterPlot from "@/components/ScatterPlot";
 import TimeSeriesChart from "@/components/TimeSeriesChart";
 import YearSlider from "@/components/YearSlider";
 
 export default function CorrelationsPage() {
-  const [year, setYear] = useState(2023);
+  const [yearIdx, setYearIdx] = useState(TAX_YEARS.length - 1);
+  const year = TAX_YEARS[yearIdx];
 
-  const yearTax = useMemo(() => TAX_REVENUE_DATA.filter((d) => d.year === year), [year]);
-  const yearFed = useMemo(() => FEDERAL_SPENDING_DATA.filter((d) => d.year === year), [year]);
-  const yearState = useMemo(() => STATE_SPENDING_DATA.filter((d) => d.year === year), [year]);
+  const yearTax = useMemo(
+    () => TAX_REVENUE_DATA.filter((d) => d.financialYear === year),
+    [year]
+  );
 
-  // Scatter: Tax Paid vs Total Spending
-  const taxVsSpending = useMemo(() => {
-    return VICTORIAN_POSTCODES.map((pc) => {
-      const tax = yearTax.find((d) => d.postcode === pc.postcode)?.totalTaxPaid || 0;
-      const fed = yearFed.find((d) => d.postcode === pc.postcode)?.total || 0;
-      const state = yearState.find((d) => d.postcode === pc.postcode)?.total || 0;
-      return { x: tax, y: fed + state, label: `${pc.postcode} ${pc.suburb}`, region: pc.region };
-    });
-  }, [yearTax, yearFed, yearState]);
+  const welfareMap = useMemo(
+    () => new Map(WELFARE_DATA.map((d) => [d.postcode, d])),
+    []
+  );
 
-  // Scatter: Median Income vs Welfare Spending
-  const incomeVsWelfare = useMemo(() => {
-    return VICTORIAN_POSTCODES.map((pc) => {
-      const taxD = yearTax.find((d) => d.postcode === pc.postcode);
-      const fedD = yearFed.find((d) => d.postcode === pc.postcode);
-      const stateD = yearState.find((d) => d.postcode === pc.postcode);
-      const income = taxD ? taxD.medianTaxableIncome / 1000 : 0; // in $K
-      const welfare = (fedD?.welfare || 0) + (stateD?.housing || 0);
-      return { x: income, y: welfare, label: `${pc.postcode} ${pc.suburb}`, region: pc.region };
-    });
-  }, [yearTax, yearFed, yearState]);
+  // Income vs welfare dependency rate
+  const incomeVsWelfareRate = useMemo(() => {
+    return yearTax
+      .filter((d) => welfareMap.has(d.postcode) && d.individuals > 100)
+      .map((d) => {
+        const w = welfareMap.get(d.postcode)!;
+        return {
+          x: d.medianTaxableIncome / 1000,
+          y: Math.round(w.totalRecipients / d.individuals * 1000) / 10,
+          label: d.postcode,
+          region: getRegion(d.postcode),
+        };
+      });
+  }, [yearTax, welfareMap]);
 
-  // Scatter: Tax Paid vs Federal Spending
-  const taxVsFederal = useMemo(() => {
-    return VICTORIAN_POSTCODES.map((pc) => {
-      const tax = yearTax.find((d) => d.postcode === pc.postcode)?.totalTaxPaid || 0;
-      const fed = yearFed.find((d) => d.postcode === pc.postcode)?.total || 0;
-      return { x: tax, y: fed, label: `${pc.postcode} ${pc.suburb}`, region: pc.region };
-    });
-  }, [yearTax, yearFed]);
+  // Tax paid vs estimated welfare cost
+  const taxVsWelfareCost = useMemo(() => {
+    return yearTax
+      .filter((d) => welfareMap.has(d.postcode) && d.taxPaid > 0)
+      .map((d) => {
+        const w = welfareMap.get(d.postcode)!;
+        return {
+          x: d.taxPaid / 1e6,
+          y: estimateWelfareCost(w) / 1e6,
+          label: d.postcode,
+          region: getRegion(d.postcode),
+        };
+      });
+  }, [yearTax, welfareMap]);
 
-  // Scatter: Tax Paid vs State Spending
-  const taxVsState = useMemo(() => {
-    return VICTORIAN_POSTCODES.map((pc) => {
-      const tax = yearTax.find((d) => d.postcode === pc.postcode)?.totalTaxPaid || 0;
-      const state = yearState.find((d) => d.postcode === pc.postcode)?.total || 0;
-      return { x: tax, y: state, label: `${pc.postcode} ${pc.suburb}`, region: pc.region };
-    });
-  }, [yearTax, yearState]);
+  // Income vs JobSeeker rate
+  const incomeVsJobseeker = useMemo(() => {
+    return yearTax
+      .filter((d) => welfareMap.has(d.postcode) && d.individuals > 100)
+      .map((d) => {
+        const w = welfareMap.get(d.postcode)!;
+        const jobseeker = w.payments["JobSeeker Payment"] || 0;
+        return {
+          x: d.medianTaxableIncome / 1000,
+          y: Math.round(jobseeker / d.individuals * 1000) / 10,
+          label: d.postcode,
+          region: getRegion(d.postcode),
+        };
+      });
+  }, [yearTax, welfareMap]);
 
-  // Correlation matrix over time
+  // Income vs Age Pension rate
+  const incomeVsAgePension = useMemo(() => {
+    return yearTax
+      .filter((d) => welfareMap.has(d.postcode) && d.individuals > 100)
+      .map((d) => {
+        const w = welfareMap.get(d.postcode)!;
+        const agePension = w.payments["Age Pension"] || 0;
+        return {
+          x: d.medianTaxableIncome / 1000,
+          y: Math.round(agePension / d.individuals * 1000) / 10,
+          label: d.postcode,
+          region: getRegion(d.postcode),
+        };
+      });
+  }, [yearTax, welfareMap]);
+
+  // Govt allowances received vs tax paid (both from ATO)
+  const govtPaymentsVsTax = useMemo(() => {
+    return yearTax
+      .filter((d) => d.individuals > 100 && d.govtAllowances + d.govtPensions > 0)
+      .map((d) => ({
+        x: d.taxPaid / 1e6,
+        y: (d.govtAllowances + d.govtPensions) / 1e6,
+        label: d.postcode,
+        region: getRegion(d.postcode),
+      }));
+  }, [yearTax]);
+
+  // Correlation over time
   const correlationTimeSeries = useMemo(() => {
-    const years = Array.from({ length: 10 }, (_, i) => 2014 + i);
-    return years.map((y) => {
-      const taxData = TAX_REVENUE_DATA.filter((d) => d.year === y);
-      const fedData = FEDERAL_SPENDING_DATA.filter((d) => d.year === y);
-      const stateData = STATE_SPENDING_DATA.filter((d) => d.year === y);
+    return TAX_YEARS.map((fy) => {
+      const taxData = TAX_REVENUE_DATA.filter((d) => d.financialYear === fy);
+      const matched = taxData.filter((d) => welfareMap.has(d.postcode) && d.individuals > 100);
 
-      const postcodes = VICTORIAN_POSTCODES.map((pc) => pc.postcode);
-
-      const taxValues = postcodes.map((p) => taxData.find((d) => d.postcode === p)?.totalTaxPaid || 0);
-      const fedValues = postcodes.map((p) => fedData.find((d) => d.postcode === p)?.total || 0);
-      const stateValues = postcodes.map((p) => stateData.find((d) => d.postcode === p)?.total || 0);
-      const totalSpendValues = postcodes.map((_, i) => fedValues[i] + stateValues[i]);
-      const welfareValues = postcodes.map((p) => fedData.find((d) => d.postcode === p)?.welfare || 0);
-      const medianIncomes = postcodes.map((p) => taxData.find((d) => d.postcode === p)?.medianTaxableIncome || 0);
+      const incomes = matched.map((d) => d.medianTaxableIncome);
+      const welfareRates = matched.map((d) => {
+        const w = welfareMap.get(d.postcode)!;
+        return w.totalRecipients / d.individuals;
+      });
+      const jobseekerRates = matched.map((d) => {
+        const w = welfareMap.get(d.postcode)!;
+        return (w.payments["JobSeeker Payment"] || 0) / d.individuals;
+      });
 
       return {
-        year: y.toString(),
-        "Tax vs Total Spending": Math.round(pearsonCorrelation(taxValues, totalSpendValues) * 1000) / 1000,
-        "Tax vs Federal": Math.round(pearsonCorrelation(taxValues, fedValues) * 1000) / 1000,
-        "Tax vs State": Math.round(pearsonCorrelation(taxValues, stateValues) * 1000) / 1000,
-        "Income vs Welfare": Math.round(pearsonCorrelation(medianIncomes, welfareValues) * 1000) / 1000,
+        year: fy,
+        "Income vs Welfare Rate": Math.round(pearsonCorrelation(incomes, welfareRates) * 1000) / 1000,
+        "Income vs JobSeeker Rate": Math.round(pearsonCorrelation(incomes, jobseekerRates) * 1000) / 1000,
       };
     });
-  }, []);
-
-  // Per-capita analysis
-  const perCapitaData = useMemo(() => {
-    return VICTORIAN_POSTCODES.map((pc) => {
-      const tax = yearTax.find((d) => d.postcode === pc.postcode)?.totalTaxPaid || 0;
-      const fed = yearFed.find((d) => d.postcode === pc.postcode)?.total || 0;
-      const state = yearState.find((d) => d.postcode === pc.postcode)?.total || 0;
-      const taxPerCapita = (tax * 1_000_000) / pc.population2021;
-      const spendPerCapita = ((fed + state) * 1_000_000) / pc.population2021;
-      return { x: taxPerCapita / 1000, y: spendPerCapita / 1000, label: `${pc.postcode} ${pc.suburb}`, region: pc.region };
-    });
-  }, [yearTax, yearFed, yearState]);
+  }, [welfareMap]);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Correlation Analysis</h1>
+        <h1 className="text-2xl font-bold text-white">Deep Correlation Analysis</h1>
         <p className="text-slate-400 text-sm mt-1">
-          Statistical relationships between tax revenue and public spending across Victorian postcodes.
+          Statistical relationships between income, tax, and welfare across Victorian postcodes.
         </p>
       </div>
 
-      <YearSlider year={year} onChange={setYear} />
+      <YearSlider year={yearIdx} onChange={setYearIdx} min={0} max={TAX_YEARS.length - 1} labels={TAX_YEARS} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ScatterPlot
-          data={taxVsSpending}
-          xLabel="Tax Paid ($M)"
-          yLabel="Total Spending ($M)"
-          title={`Tax Paid vs Total Government Spending (${year})`}
+          data={incomeVsWelfareRate}
+          xLabel="Avg Taxable Income ($K)"
+          yLabel="Welfare Recipients per 10 Taxpayers"
+          title={`Income vs Welfare Dependency Rate (${year})`}
         />
         <ScatterPlot
-          data={perCapitaData}
-          xLabel="Tax Per Capita ($K)"
-          yLabel="Spending Per Capita ($K)"
-          title={`Per Capita: Tax Paid vs Spending Received (${year})`}
+          data={taxVsWelfareCost}
+          xLabel="Tax Paid ($M)"
+          yLabel="Est. Welfare Cost ($M)"
+          title={`Tax Paid vs Estimated Welfare Cost (${year})`}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ScatterPlot
-          data={taxVsFederal}
-          xLabel="Tax Paid ($M)"
-          yLabel="Federal Spending ($M)"
-          title={`Tax Paid vs Federal Spending (${year})`}
+          data={incomeVsJobseeker}
+          xLabel="Avg Taxable Income ($K)"
+          yLabel="JobSeeker per 10 Taxpayers"
+          title={`Income vs JobSeeker Rate (${year})`}
         />
         <ScatterPlot
-          data={taxVsState}
-          xLabel="Tax Paid ($M)"
-          yLabel="State Spending ($M)"
-          title={`Tax Paid vs State Spending (${year})`}
+          data={incomeVsAgePension}
+          xLabel="Avg Taxable Income ($K)"
+          yLabel="Age Pension per 10 Taxpayers"
+          title={`Income vs Age Pension Rate (${year})`}
         />
       </div>
 
       <ScatterPlot
-        data={incomeVsWelfare}
-        xLabel="Median Income ($K)"
-        yLabel="Welfare + Housing ($M)"
-        title={`Median Income vs Welfare/Housing Spending (${year})`}
+        data={govtPaymentsVsTax}
+        xLabel="Tax Paid ($M)"
+        yLabel="Govt Allowances + Pensions ($M)"
+        title={`Tax Paid vs Government Payments Received — ATO data (${year})`}
       />
 
       <TimeSeriesChart
         data={correlationTimeSeries}
         lines={[
-          { key: "Tax vs Total Spending", color: "#60a5fa", name: "Tax vs Total Spending" },
-          { key: "Tax vs Federal", color: "#f472b6", name: "Tax vs Federal" },
-          { key: "Tax vs State", color: "#34d399", name: "Tax vs State" },
-          { key: "Income vs Welfare", color: "#fbbf24", name: "Income vs Welfare" },
+          { key: "Income vs Welfare Rate", color: "#f472b6", name: "Income vs Welfare Rate" },
+          { key: "Income vs JobSeeker Rate", color: "#fbbf24", name: "Income vs JobSeeker Rate" },
         ]}
-        title="Pearson Correlation Coefficients Over Time (2014-2023)"
+        title="Correlation Coefficients Over Time (using ATO income data per year, DSS welfare snapshot)"
         yLabel="r"
       />
 
       <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-        <h3 className="text-sm font-medium text-slate-300 mb-2">Interpreting Correlations</h3>
+        <h3 className="text-sm font-medium text-slate-300 mb-2">Methodology Notes</h3>
         <div className="text-xs text-slate-400 space-y-1">
-          <p><strong>r close to +1.0:</strong> Strong positive correlation — postcodes that pay more tax also receive more spending (often driven by population size).</p>
-          <p><strong>r close to 0:</strong> No linear relationship between the variables.</p>
-          <p><strong>r close to -1.0:</strong> Strong negative correlation — higher values of one variable associate with lower values of the other.</p>
-          <p><strong>R² (R-squared):</strong> Proportion of variance in Y explained by X. Higher = better fit of the trend line.</p>
-          <p className="mt-2 text-slate-500 italic">Per-capita analysis removes population effects and reveals whether wealthier postcodes receive proportionally more or less spending.</p>
+          <p><strong>Income data:</strong> Changes per year (ATO). <strong>Welfare data:</strong> Fixed March 2025 snapshot (DSS). The correlation over time chart shows how the relationship between income levels and welfare rates changes as incomes shift.</p>
+          <p><strong>Welfare rate</strong> = DSS payment recipients / ATO taxpayers in same postcode. This understates the true rate since DSS counts include non-taxpayers.</p>
+          <p><strong>Estimated cost</strong> uses standard 2024-25 payment rates. Actual costs vary by individual assessment.</p>
         </div>
       </div>
     </div>

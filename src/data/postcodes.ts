@@ -1,159 +1,41 @@
-// Victorian postcodes with metadata
-// Based on ABS and ATO statistical areas
-export interface PostcodeInfo {
-  postcode: string;
-  suburb: string;
-  region: string;
-  lat: number;
-  lng: number;
-  population2021: number;
+// Victorian postcode region mapping
+// Maps 3xxx postcodes to broad regions for grouping in charts
+
+export function getRegion(postcode: string): string {
+  const pc = parseInt(postcode);
+  if (pc >= 3000 && pc <= 3008) return "CBD & Docklands";
+  if (pc >= 3009 && pc <= 3030) return "Western Melbourne";
+  if (pc >= 3031 && pc <= 3044) return "Inner North West";
+  if (pc >= 3045 && pc <= 3049) return "Outer North West";
+  if (pc >= 3050 && pc <= 3068) return "Inner Melbourne";
+  if (pc >= 3069 && pc <= 3079) return "Inner North East";
+  if (pc >= 3080 && pc <= 3099) return "North East Melbourne";
+  if (pc >= 3100 && pc <= 3120) return "Eastern Melbourne";
+  if (pc >= 3121 && pc <= 3146) return "Inner East & South East";
+  if (pc >= 3147 && pc <= 3180) return "Outer East";
+  if (pc >= 3181 && pc <= 3207) return "Bayside & Inner South";
+  if (pc >= 3210 && pc <= 3249) return "Geelong & Surf Coast";
+  if (pc >= 3250 && pc <= 3349) return "Western Victoria";
+  if (pc >= 3350 && pc <= 3399) return "Ballarat & Central Highlands";
+  if (pc >= 3400 && pc <= 3499) return "Wimmera & Mallee";
+  if (pc >= 3500 && pc <= 3549) return "Sunraysia & Murray";
+  if (pc >= 3550 && pc <= 3599) return "Bendigo & Loddon";
+  if (pc >= 3600 && pc <= 3649) return "Goulburn Valley";
+  if (pc >= 3650 && pc <= 3699) return "North East Victoria";
+  if (pc >= 3700 && pc <= 3799) return "Outer North Melbourne";
+  if (pc >= 3800 && pc <= 3815) return "South East Melbourne";
+  if (pc >= 3816 && pc <= 3899) return "Gippsland";
+  if (pc >= 3900 && pc <= 3949) return "Mornington Peninsula";
+  if (pc >= 3950 && pc <= 3999) return "South East Growth Corridor";
+  return "Other VIC";
 }
 
-export const VICTORIAN_POSTCODES: PostcodeInfo[] = [
-  { postcode: "3000", suburb: "Melbourne CBD", region: "Inner Melbourne", lat: -37.8136, lng: 144.9631, population2021: 47000 },
-  { postcode: "3002", suburb: "East Melbourne", region: "Inner Melbourne", lat: -37.8163, lng: 144.9870, population2021: 5200 },
-  { postcode: "3004", suburb: "St Kilda Road", region: "Inner Melbourne", lat: -37.8400, lng: 144.9750, population2021: 14000 },
-  { postcode: "3006", suburb: "Southbank", region: "Inner Melbourne", lat: -37.8230, lng: 144.9600, population2021: 22000 },
-  { postcode: "3008", suburb: "Docklands", region: "Inner Melbourne", lat: -37.8150, lng: 144.9460, population2021: 18000 },
-  { postcode: "3011", suburb: "Footscray", region: "Western Melbourne", lat: -37.7995, lng: 144.8998, population2021: 17000 },
-  { postcode: "3012", suburb: "Brooklyn/Maidstone", region: "Western Melbourne", lat: -37.8100, lng: 144.8500, population2021: 22000 },
-  { postcode: "3018", suburb: "Altona", region: "Western Melbourne", lat: -37.8680, lng: 144.8300, population2021: 11000 },
-  { postcode: "3020", suburb: "Sunshine", region: "Western Melbourne", lat: -37.7880, lng: 144.8330, population2021: 9500 },
-  { postcode: "3021", suburb: "St Albans", region: "Western Melbourne", lat: -37.7430, lng: 144.8000, population2021: 38000 },
-  { postcode: "3023", suburb: "Caroline Springs", region: "Western Melbourne", lat: -37.7400, lng: 144.7350, population2021: 30000 },
-  { postcode: "3025", suburb: "Altona North", region: "Western Melbourne", lat: -37.8370, lng: 144.8500, population2021: 13000 },
-  { postcode: "3028", suburb: "Williamstown", region: "Western Melbourne", lat: -37.8600, lng: 144.8960, population2021: 14000 },
-  { postcode: "3029", suburb: "Hoppers Crossing", region: "Western Melbourne", lat: -37.8830, lng: 144.7000, population2021: 33000 },
-  { postcode: "3030", suburb: "Werribee", region: "Western Melbourne", lat: -37.9000, lng: 144.6600, population2021: 43000 },
-  { postcode: "3031", suburb: "Flemington", region: "Inner Melbourne", lat: -37.7880, lng: 144.9370, population2021: 10000 },
-  { postcode: "3032", suburb: "Ascot Vale", region: "Inner Melbourne", lat: -37.7780, lng: 144.9170, population2021: 14000 },
-  { postcode: "3039", suburb: "Moonee Ponds", region: "Inner North", lat: -37.7660, lng: 144.9200, population2021: 14000 },
-  { postcode: "3040", suburb: "Essendon", region: "Inner North", lat: -37.7510, lng: 144.9170, population2021: 12000 },
-  { postcode: "3042", suburb: "Airport West", region: "Northern Melbourne", lat: -37.7270, lng: 144.8800, population2021: 8500 },
-  { postcode: "3044", suburb: "Pascoe Vale", region: "Northern Melbourne", lat: -37.7280, lng: 144.9350, population2021: 17000 },
-  { postcode: "3046", suburb: "Glenroy", region: "Northern Melbourne", lat: -37.7030, lng: 144.9260, population2021: 23000 },
-  { postcode: "3047", suburb: "Broadmeadows", region: "Northern Melbourne", lat: -37.6820, lng: 144.9190, population2021: 11000 },
-  { postcode: "3048", suburb: "Meadow Heights", region: "Northern Melbourne", lat: -37.6600, lng: 144.9250, population2021: 14000 },
-  { postcode: "3049", suburb: "Attwood", region: "Northern Melbourne", lat: -37.6690, lng: 144.8800, population2021: 4000 },
-  { postcode: "3050", suburb: "Royal Melbourne Hospital", region: "Inner Melbourne", lat: -37.7990, lng: 144.9550, population2021: 5000 },
-  { postcode: "3051", suburb: "North Melbourne", region: "Inner Melbourne", lat: -37.7970, lng: 144.9430, population2021: 15000 },
-  { postcode: "3052", suburb: "Carlton", region: "Inner Melbourne", lat: -37.7950, lng: 144.9680, population2021: 18000 },
-  { postcode: "3053", suburb: "Carlton North", region: "Inner Melbourne", lat: -37.7850, lng: 144.9700, population2021: 8000 },
-  { postcode: "3054", suburb: "Fitzroy North", region: "Inner Melbourne", lat: -37.7800, lng: 144.9800, population2021: 12000 },
-  { postcode: "3056", suburb: "Brunswick", region: "Inner North", lat: -37.7670, lng: 144.9600, population2021: 25000 },
-  { postcode: "3057", suburb: "Brunswick East", region: "Inner North", lat: -37.7700, lng: 144.9730, population2021: 10000 },
-  { postcode: "3058", suburb: "Coburg", region: "Inner North", lat: -37.7430, lng: 144.9640, population2021: 26000 },
-  { postcode: "3060", suburb: "Fawkner", region: "Northern Melbourne", lat: -37.7120, lng: 144.9600, population2021: 14000 },
-  { postcode: "3064", suburb: "Craigieburn", region: "Northern Melbourne", lat: -37.6000, lng: 144.9400, population2021: 55000 },
-  { postcode: "3065", suburb: "Fitzroy", region: "Inner Melbourne", lat: -37.8000, lng: 144.9780, population2021: 11000 },
-  { postcode: "3066", suburb: "Collingwood", region: "Inner Melbourne", lat: -37.8030, lng: 144.9870, population2021: 8000 },
-  { postcode: "3067", suburb: "Abbotsford", region: "Inner Melbourne", lat: -37.8050, lng: 144.9990, population2021: 7500 },
-  { postcode: "3068", suburb: "Clifton Hill", region: "Inner Melbourne", lat: -37.7880, lng: 144.9950, population2021: 5000 },
-  { postcode: "3070", suburb: "Northcote", region: "Inner North", lat: -37.7710, lng: 145.0020, population2021: 15000 },
-  { postcode: "3071", suburb: "Thornbury", region: "Inner North", lat: -37.7550, lng: 145.0050, population2021: 18000 },
-  { postcode: "3072", suburb: "Preston", region: "Northern Melbourne", lat: -37.7400, lng: 145.0100, population2021: 33000 },
-  { postcode: "3073", suburb: "Reservoir", region: "Northern Melbourne", lat: -37.7170, lng: 145.0100, population2021: 50000 },
-  { postcode: "3078", suburb: "Alphington", region: "Inner Melbourne", lat: -37.7800, lng: 145.0300, population2021: 5500 },
-  { postcode: "3079", suburb: "Ivanhoe", region: "Eastern Melbourne", lat: -37.7700, lng: 145.0450, population2021: 12000 },
-  { postcode: "3081", suburb: "Heidelberg", region: "Eastern Melbourne", lat: -37.7560, lng: 145.0600, population2021: 7000 },
-  { postcode: "3083", suburb: "Bundoora", region: "Northern Melbourne", lat: -37.7000, lng: 145.0600, population2021: 25000 },
-  { postcode: "3084", suburb: "Rosanna", region: "Eastern Melbourne", lat: -37.7430, lng: 145.0700, population2021: 9000 },
-  { postcode: "3085", suburb: "Macleod", region: "Eastern Melbourne", lat: -37.7300, lng: 145.0700, population2021: 7500 },
-  { postcode: "3101", suburb: "Kew", region: "Eastern Melbourne", lat: -37.8100, lng: 145.0350, population2021: 25000 },
-  { postcode: "3103", suburb: "Balwyn", region: "Eastern Melbourne", lat: -37.8100, lng: 145.0700, population2021: 14000 },
-  { postcode: "3104", suburb: "Balwyn North", region: "Eastern Melbourne", lat: -37.7900, lng: 145.0850, population2021: 21000 },
-  { postcode: "3108", suburb: "Doncaster", region: "Eastern Melbourne", lat: -37.7830, lng: 145.1260, population2021: 25000 },
-  { postcode: "3121", suburb: "Richmond", region: "Inner Melbourne", lat: -37.8200, lng: 145.0000, population2021: 28000 },
-  { postcode: "3122", suburb: "Hawthorn", region: "Inner East", lat: -37.8220, lng: 145.0350, population2021: 23000 },
-  { postcode: "3123", suburb: "Hawthorn East", region: "Inner East", lat: -37.8280, lng: 145.0500, population2021: 9000 },
-  { postcode: "3124", suburb: "Camberwell", region: "Inner East", lat: -37.8400, lng: 145.0700, population2021: 23000 },
-  { postcode: "3125", suburb: "Burwood", region: "Eastern Melbourne", lat: -37.8500, lng: 145.1000, population2021: 14000 },
-  { postcode: "3126", suburb: "Canterbury", region: "Inner East", lat: -37.8270, lng: 145.0850, population2021: 8000 },
-  { postcode: "3127", suburb: "Surrey Hills", region: "Inner East", lat: -37.8230, lng: 145.1000, population2021: 9000 },
-  { postcode: "3128", suburb: "Box Hill", region: "Eastern Melbourne", lat: -37.8190, lng: 145.1230, population2021: 12000 },
-  { postcode: "3130", suburb: "Blackburn", region: "Eastern Melbourne", lat: -37.8200, lng: 145.1500, population2021: 14000 },
-  { postcode: "3131", suburb: "Forest Hill", region: "Eastern Melbourne", lat: -37.8330, lng: 145.1700, population2021: 11000 },
-  { postcode: "3132", suburb: "Mitcham", region: "Eastern Melbourne", lat: -37.8130, lng: 145.1930, population2021: 16000 },
-  { postcode: "3134", suburb: "Ringwood", region: "Outer East", lat: -37.8150, lng: 145.2300, population2021: 19000 },
-  { postcode: "3141", suburb: "South Yarra", region: "Inner Melbourne", lat: -37.8400, lng: 144.9930, population2021: 24000 },
-  { postcode: "3142", suburb: "Toorak", region: "Inner East", lat: -37.8420, lng: 145.0150, population2021: 13000 },
-  { postcode: "3143", suburb: "Armadale", region: "Inner East", lat: -37.8550, lng: 145.0180, population2021: 8000 },
-  { postcode: "3144", suburb: "Malvern", region: "Inner East", lat: -37.8620, lng: 145.0350, population2021: 11000 },
-  { postcode: "3145", suburb: "Malvern East/Caulfield", region: "Inner South East", lat: -37.8700, lng: 145.0500, population2021: 23000 },
-  { postcode: "3146", suburb: "Glen Iris", region: "Inner East", lat: -37.8600, lng: 145.0650, population2021: 14000 },
-  { postcode: "3147", suburb: "Ashburton", region: "Inner East", lat: -37.8650, lng: 145.0850, population2021: 9000 },
-  { postcode: "3148", suburb: "Glen Waverley", region: "Eastern Melbourne", lat: -37.8780, lng: 145.1650, population2021: 42000 },
-  { postcode: "3150", suburb: "Glen Waverley South", region: "Eastern Melbourne", lat: -37.8900, lng: 145.1800, population2021: 20000 },
-  { postcode: "3152", suburb: "Wantirna", region: "Outer East", lat: -37.8500, lng: 145.2200, population2021: 15000 },
-  { postcode: "3153", suburb: "Bayswater", region: "Outer East", lat: -37.8430, lng: 145.2600, population2021: 12000 },
-  { postcode: "3155", suburb: "Boronia", region: "Outer East", lat: -37.8600, lng: 145.2800, population2021: 22000 },
-  { postcode: "3156", suburb: "Ferntree Gully", region: "Outer East", lat: -37.8800, lng: 145.2900, population2021: 27000 },
-  { postcode: "3160", suburb: "Belgrave", region: "Outer East", lat: -37.9100, lng: 145.3500, population2021: 4500 },
-  { postcode: "3161", suburb: "Caulfield North", region: "Inner South East", lat: -37.8750, lng: 145.0250, population2021: 11000 },
-  { postcode: "3162", suburb: "Caulfield South", region: "Inner South East", lat: -37.8850, lng: 145.0250, population2021: 10000 },
-  { postcode: "3163", suburb: "Carnegie", region: "Inner South East", lat: -37.8900, lng: 145.0550, population2021: 17000 },
-  { postcode: "3165", suburb: "Bentleigh East", region: "South East Melbourne", lat: -37.9100, lng: 145.0700, population2021: 27000 },
-  { postcode: "3166", suburb: "Oakleigh", region: "South East Melbourne", lat: -37.9000, lng: 145.0900, population2021: 20000 },
-  { postcode: "3168", suburb: "Clayton", region: "South East Melbourne", lat: -37.9150, lng: 145.1200, population2021: 21000 },
-  { postcode: "3170", suburb: "Mulgrave", region: "South East Melbourne", lat: -37.9250, lng: 145.1650, population2021: 20000 },
-  { postcode: "3171", suburb: "Springvale", region: "South East Melbourne", lat: -37.9480, lng: 145.1530, population2021: 22000 },
-  { postcode: "3172", suburb: "Springvale South", region: "South East Melbourne", lat: -37.9600, lng: 145.1500, population2021: 9000 },
-  { postcode: "3173", suburb: "Keysborough", region: "South East Melbourne", lat: -37.9900, lng: 145.1700, population2021: 23000 },
-  { postcode: "3174", suburb: "Noble Park", region: "South East Melbourne", lat: -37.9670, lng: 145.1800, population2021: 32000 },
-  { postcode: "3175", suburb: "Dandenong", region: "South East Melbourne", lat: -37.9870, lng: 145.2150, population2021: 30000 },
-  { postcode: "3177", suburb: "Doveton", region: "South East Melbourne", lat: -37.9950, lng: 145.2400, population2021: 11000 },
-  { postcode: "3178", suburb: "Rowville", region: "Outer East", lat: -37.9300, lng: 145.2400, population2021: 35000 },
-  { postcode: "3180", suburb: "Knoxfield", region: "Outer East", lat: -37.8900, lng: 145.2200, population2021: 6000 },
-  { postcode: "3182", suburb: "St Kilda", region: "Inner Melbourne", lat: -37.8680, lng: 144.9800, population2021: 21000 },
-  { postcode: "3183", suburb: "St Kilda East", region: "Inner South East", lat: -37.8700, lng: 144.9950, population2021: 10000 },
-  { postcode: "3185", suburb: "Elsternwick", region: "Inner South East", lat: -37.8850, lng: 145.0000, population2021: 7500 },
-  { postcode: "3186", suburb: "Brighton", region: "Bayside", lat: -37.9050, lng: 145.0000, population2021: 23000 },
-  { postcode: "3187", suburb: "Brighton East", region: "Bayside", lat: -37.9100, lng: 145.0200, population2021: 14000 },
-  { postcode: "3188", suburb: "Hampton", region: "Bayside", lat: -37.9350, lng: 145.0050, population2021: 13000 },
-  { postcode: "3189", suburb: "Moorabbin", region: "South East Melbourne", lat: -37.9350, lng: 145.0400, population2021: 7500 },
-  { postcode: "3190", suburb: "Highett", region: "Bayside", lat: -37.9500, lng: 145.0400, population2021: 10000 },
-  { postcode: "3191", suburb: "Sandringham", region: "Bayside", lat: -37.9500, lng: 145.0100, population2021: 9000 },
-  { postcode: "3192", suburb: "Cheltenham", region: "South East Melbourne", lat: -37.9550, lng: 145.0500, population2021: 21000 },
-  { postcode: "3193", suburb: "Beaumaris", region: "Bayside", lat: -37.9850, lng: 145.0300, population2021: 13000 },
-  { postcode: "3194", suburb: "Mentone", region: "South East Melbourne", lat: -37.9800, lng: 145.0600, population2021: 11000 },
-  { postcode: "3195", suburb: "Mordialloc/Aspendale", region: "South East Melbourne", lat: -38.0050, lng: 145.0800, population2021: 22000 },
-  { postcode: "3196", suburb: "Chelsea", region: "South East Melbourne", lat: -38.0500, lng: 145.1200, population2021: 23000 },
-  { postcode: "3199", suburb: "Frankston", region: "Mornington Peninsula", lat: -38.1400, lng: 145.1260, population2021: 36000 },
-  { postcode: "3200", suburb: "Frankston North", region: "Mornington Peninsula", lat: -38.1200, lng: 145.1200, population2021: 5000 },
-  { postcode: "3201", suburb: "Carrum Downs", region: "South East Melbourne", lat: -38.1000, lng: 145.1700, population2021: 20000 },
-  { postcode: "3202", suburb: "Seaford", region: "South East Melbourne", lat: -38.0950, lng: 145.1300, population2021: 16000 },
-  { postcode: "3204", suburb: "Bentleigh", region: "Inner South East", lat: -37.9180, lng: 145.0350, population2021: 16000 },
-  { postcode: "3205", suburb: "South Melbourne", region: "Inner Melbourne", lat: -37.8330, lng: 144.9600, population2021: 10000 },
-  { postcode: "3206", suburb: "Albert Park", region: "Inner Melbourne", lat: -37.8450, lng: 144.9570, population2021: 7000 },
-  { postcode: "3207", suburb: "Port Melbourne", region: "Inner Melbourne", lat: -37.8380, lng: 144.9370, population2021: 16000 },
-  // Regional Victoria
-  { postcode: "3216", suburb: "Belmont/Grovedale", region: "Geelong", lat: -38.1800, lng: 144.3400, population2021: 28000 },
-  { postcode: "3220", suburb: "Geelong", region: "Geelong", lat: -38.1500, lng: 144.3600, population2021: 14000 },
-  { postcode: "3350", suburb: "Ballarat", region: "Ballarat", lat: -37.5600, lng: 143.8500, population2021: 42000 },
-  { postcode: "3355", suburb: "Wendouree", region: "Ballarat", lat: -37.5300, lng: 143.8300, population2021: 12000 },
-  { postcode: "3400", suburb: "Horsham", region: "Wimmera", lat: -36.7100, lng: 142.2000, population2021: 15000 },
-  { postcode: "3500", suburb: "Mildura", region: "Sunraysia", lat: -34.1900, lng: 142.1600, population2021: 35000 },
-  { postcode: "3550", suburb: "Bendigo", region: "Bendigo", lat: -36.7600, lng: 144.2800, population2021: 40000 },
-  { postcode: "3630", suburb: "Shepparton", region: "Goulburn Valley", lat: -36.3800, lng: 145.4000, population2021: 32000 },
-  { postcode: "3690", suburb: "Wodonga", region: "North East", lat: -36.1200, lng: 146.8900, population2021: 28000 },
-  { postcode: "3750", suburb: "South Morang", region: "Northern Melbourne", lat: -37.6500, lng: 145.0900, population2021: 30000 },
-  { postcode: "3752", suburb: "Mill Park", region: "Northern Melbourne", lat: -37.6630, lng: 145.0600, population2021: 30000 },
-  { postcode: "3754", suburb: "Mernda", region: "Northern Melbourne", lat: -37.6000, lng: 145.1000, population2021: 22000 },
-  { postcode: "3800", suburb: "Monash University", region: "Eastern Melbourne", lat: -37.9100, lng: 145.1400, population2021: 3000 },
-  { postcode: "3802", suburb: "Endeavour Hills", region: "South East Melbourne", lat: -37.9750, lng: 145.2500, population2021: 30000 },
-  { postcode: "3803", suburb: "Hallam", region: "South East Melbourne", lat: -37.9950, lng: 145.2700, population2021: 12000 },
-  { postcode: "3805", suburb: "Narre Warren", region: "South East Melbourne", lat: -38.0200, lng: 145.3000, population2021: 30000 },
-  { postcode: "3806", suburb: "Berwick", region: "South East Melbourne", lat: -38.0450, lng: 145.3500, population2021: 50000 },
-  { postcode: "3810", suburb: "Pakenham", region: "South East Melbourne", lat: -38.0700, lng: 145.4900, population2021: 46000 },
-  { postcode: "3818", suburb: "Warragul", region: "Gippsland", lat: -38.1600, lng: 145.9300, population2021: 16000 },
-  { postcode: "3820", suburb: "Moe/Newborough", region: "Gippsland", lat: -38.1800, lng: 146.2600, population2021: 16000 },
-  { postcode: "3840", suburb: "Traralgon", region: "Gippsland", lat: -38.1950, lng: 146.5400, population2021: 28000 },
-  { postcode: "3844", suburb: "Sale", region: "Gippsland", lat: -38.1000, lng: 147.0700, population2021: 15000 },
-  { postcode: "3850", suburb: "Bairnsdale", region: "East Gippsland", lat: -37.8200, lng: 147.6100, population2021: 15000 },
-  { postcode: "3912", suburb: "Somerville", region: "Mornington Peninsula", lat: -38.2300, lng: 145.1800, population2021: 12000 },
-  { postcode: "3930", suburb: "Mount Eliza", region: "Mornington Peninsula", lat: -38.1900, lng: 145.0900, population2021: 18000 },
-  { postcode: "3931", suburb: "Mornington", region: "Mornington Peninsula", lat: -38.2200, lng: 145.0400, population2021: 25000 },
-  { postcode: "3936", suburb: "Dromana", region: "Mornington Peninsula", lat: -38.3300, lng: 144.9700, population2021: 7000 },
-  { postcode: "3977", suburb: "Cranbourne", region: "South East Melbourne", lat: -38.1000, lng: 145.2800, population2021: 55000 },
-  { postcode: "3978", suburb: "Clyde/Clyde North", region: "South East Melbourne", lat: -38.1300, lng: 145.3400, population2021: 30000 },
+export const REGIONS = [
+  "CBD & Docklands", "Inner Melbourne", "Inner North West", "Inner North East",
+  "Inner East & South East", "Bayside & Inner South", "Western Melbourne",
+  "Outer North West", "North East Melbourne", "Eastern Melbourne", "Outer East",
+  "Outer North Melbourne", "South East Melbourne", "South East Growth Corridor",
+  "Mornington Peninsula", "Geelong & Surf Coast", "Ballarat & Central Highlands",
+  "Bendigo & Loddon", "Goulburn Valley", "North East Victoria",
+  "Gippsland", "Western Victoria", "Wimmera & Mallee", "Sunraysia & Murray",
 ];
