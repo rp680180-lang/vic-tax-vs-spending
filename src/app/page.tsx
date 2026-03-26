@@ -124,7 +124,7 @@ export default function OverviewPage() {
         <ScatterPlot
           data={incomeVsWelfareRate}
           xLabel="Avg Taxable Income ($K)"
-          yLabel="Welfare per 10 Taxpayers"
+          yLabel="Recipients per 10 Taxpayers"
           title={`Income vs Welfare Rate by Region (${year}) — r = ${corrCoeff.toFixed(3)}`}
         />
         <ScatterPlot
