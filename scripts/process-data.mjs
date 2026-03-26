@@ -66,6 +66,7 @@ function findHeaderAndCols(data) {
           if (/taxable income or loss.*\$/.test(h) && !cols.taxableIncome) cols.taxableIncome = k;
           if (/(net tax|net tax )\$/.test(h) || (h.includes("net tax") && h.includes("$") && !h.includes("business") && !h.includes("capital"))) cols.netTax = k;
           if (/^(gross tax|tax on taxable income).*\$/.test(h) && !cols.grossTax) cols.grossTax = k;
+          if (/^net tax.*\$/.test(h) && !h.includes("business") && !h.includes("estimated") && !cols.realNetTax) cols.realNetTax = k;
           if (/salary or wages.*\$/.test(h)) cols.salaryWages = k;
           if (/total income or loss.*\$/.test(h)) cols.totalIncome = k;
           if (/australian government allowances and payments.*\$/.test(h)) cols.govtAllowances = k;
@@ -99,8 +100,8 @@ async function processATO() {
       }
 
       const { headerIdx, cols } = result;
-      // Use grossTax as fallback if netTax not available
-      const taxCol = cols.netTax || cols.grossTax;
+      // Use grossTax (Tax on taxable income) as the primary tax column
+      const taxCol = cols.grossTax;
 
       console.log(`  ${file.year}: headerRow=${headerIdx}, hasTaxCol=${!!taxCol}, cols=${Object.keys(cols).join(",")}`);
 

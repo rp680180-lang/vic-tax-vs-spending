@@ -22,26 +22,30 @@ interface ScatterPlotProps {
 }
 
 const REGION_COLORS: Record<string, string> = {
-  "Inner Melbourne": "#60a5fa",
-  "Inner East": "#a78bfa",
-  "Inner North": "#34d399",
-  "Inner South East": "#f472b6",
+  "CBD & Docklands": "#60a5fa",
+  "Inner Melbourne": "#3b82f6",
+  "Inner North West": "#34d399",
+  "Inner North East": "#10b981",
+  "Inner East & South East": "#a78bfa",
+  "Bayside & Inner South": "#c084fc",
   "Western Melbourne": "#fb923c",
-  "Northern Melbourne": "#fbbf24",
+  "Outer North West": "#f59e0b",
+  "North East Melbourne": "#fbbf24",
   "Eastern Melbourne": "#818cf8",
   "Outer East": "#2dd4bf",
+  "Outer North Melbourne": "#f472b6",
   "South East Melbourne": "#f87171",
-  "Bayside": "#c084fc",
+  "South East Growth Corridor": "#ef4444",
   "Mornington Peninsula": "#4ade80",
-  "Geelong": "#38bdf8",
-  "Ballarat": "#fb7185",
-  "Bendigo": "#a3e635",
+  "Geelong & Surf Coast": "#38bdf8",
+  "Ballarat & Central Highlands": "#fb7185",
+  "Bendigo & Loddon": "#a3e635",
   "Goulburn Valley": "#e879f9",
+  "North East Victoria": "#f97316",
   "Gippsland": "#22d3ee",
-  "East Gippsland": "#facc15",
-  "North East": "#f97316",
-  "Wimmera": "#94a3b8",
-  "Sunraysia": "#d946ef",
+  "Western Victoria": "#94a3b8",
+  "Wimmera & Mallee": "#d946ef",
+  "Sunraysia & Murray": "#facc15",
 };
 
 export default function ScatterPlot({
@@ -126,20 +130,19 @@ export default function ScatterPlot({
           )}
         </ScatterChart>
       </ResponsiveContainer>
-      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
-        {regions.slice(0, 10).map((region) => (
-          <div key={region} className="flex items-center gap-1">
-            <div
-              className="w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: REGION_COLORS[region] || "#94a3b8" }}
-            />
-            <span className="text-[10px] text-slate-400">{region}</span>
-          </div>
-        ))}
-        {regions.length > 10 && (
-          <span className="text-[10px] text-slate-500">+{regions.length - 10} more</span>
-        )}
-      </div>
+      {regions.length <= 30 && (
+        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
+          {regions.map((region) => (
+            <div key={region} className="flex items-center gap-1">
+              <div
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: REGION_COLORS[region] || "#94a3b8" }}
+              />
+              <span className="text-[10px] text-slate-400">{region}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -9,6 +9,43 @@ import ScatterPlot from "@/components/ScatterPlot";
 import TimeSeriesChart from "@/components/TimeSeriesChart";
 import YearSlider from "@/components/YearSlider";
 
+function aggregateByRegion(yearTax: typeof TAX_REVENUE_DATA, welfareMap: Map<string, typeof WELFARE_DATA[0]>) {
+  const regionAgg = new Map<string, {
+    income: number; individuals: number; taxPaid: number;
+    welfareRecipients: number; welfareCost: number;
+    jobseeker: number; agePension: number; dsp: number;
+    govtAllowances: number; govtPensions: number;
+  }>();
+
+  for (const d of yearTax) {
+    const region = getRegion(d.postcode);
+    const w = welfareMap.get(d.postcode);
+    const agg = regionAgg.get(region) || {
+      income: 0, individuals: 0, taxPaid: 0,
+      welfareRecipients: 0, welfareCost: 0,
+      jobseeker: 0, agePension: 0, dsp: 0,
+      govtAllowances: 0, govtPensions: 0,
+    };
+    agg.income += d.taxableIncome;
+    agg.individuals += d.individuals;
+    agg.taxPaid += d.taxPaid;
+    agg.govtAllowances += d.govtAllowances;
+    agg.govtPensions += d.govtPensions;
+    if (w) {
+      agg.welfareRecipients += w.totalRecipients;
+      agg.welfareCost += estimateWelfareCost(w);
+      agg.jobseeker += w.payments["JobSeeker Payment"] || 0;
+      agg.agePension += w.payments["Age Pension"] || 0;
+      agg.dsp += w.payments["Disability Support Pension"] || 0;
+    }
+    regionAgg.set(region, agg);
+  }
+
+  return Array.from(regionAgg.entries())
+    .filter(([, v]) => v.individuals > 0)
+    .map(([region, v]) => ({ region, ...v, avgIncome: v.income / v.individuals }));
+}
+
 export default function CorrelationsPage() {
   const [yearIdx, setYearIdx] = useState(TAX_YEARS.length - 1);
   const year = TAX_YEARS[yearIdx];
@@ -23,87 +60,45 @@ export default function CorrelationsPage() {
     []
   );
 
-  // Income vs welfare dependency rate
-  const incomeVsWelfareRate = useMemo(() => {
-    return yearTax
-      .filter((d) => welfareMap.has(d.postcode) && d.individuals > 100)
-      .map((d) => {
-        const w = welfareMap.get(d.postcode)!;
-        return {
-          x: d.medianTaxableIncome / 1000,
-          y: Math.round(w.totalRecipients / d.individuals * 1000) / 10,
-          label: d.postcode,
-          region: getRegion(d.postcode),
-        };
-      });
-  }, [yearTax, welfareMap]);
+  const regions = useMemo(() => aggregateByRegion(yearTax, welfareMap), [yearTax, welfareMap]);
 
-  // Tax paid vs estimated welfare cost
-  const taxVsWelfareCost = useMemo(() => {
-    return yearTax
-      .filter((d) => welfareMap.has(d.postcode) && d.taxPaid > 0)
-      .map((d) => {
-        const w = welfareMap.get(d.postcode)!;
-        return {
-          x: d.taxPaid / 1e6,
-          y: estimateWelfareCost(w) / 1e6,
-          label: d.postcode,
-          region: getRegion(d.postcode),
-        };
-      });
-  }, [yearTax, welfareMap]);
+  const incomeVsWelfareRate = regions.filter((d) => d.welfareRecipients > 0).map((d) => ({
+    x: Math.round(d.avgIncome / 1000),
+    y: Math.round(d.welfareRecipients / d.individuals * 1000) / 10,
+    label: d.region, region: d.region,
+  }));
 
-  // Income vs JobSeeker rate
-  const incomeVsJobseeker = useMemo(() => {
-    return yearTax
-      .filter((d) => welfareMap.has(d.postcode) && d.individuals > 100)
-      .map((d) => {
-        const w = welfareMap.get(d.postcode)!;
-        const jobseeker = w.payments["JobSeeker Payment"] || 0;
-        return {
-          x: d.medianTaxableIncome / 1000,
-          y: Math.round(jobseeker / d.individuals * 1000) / 10,
-          label: d.postcode,
-          region: getRegion(d.postcode),
-        };
-      });
-  }, [yearTax, welfareMap]);
+  const taxVsWelfareCost = regions.filter((d) => d.welfareCost > 0).map((d) => ({
+    x: Math.round(d.taxPaid / 1e6),
+    y: Math.round(d.welfareCost / 1e6),
+    label: d.region, region: d.region,
+  }));
 
-  // Income vs Age Pension rate
-  const incomeVsAgePension = useMemo(() => {
-    return yearTax
-      .filter((d) => welfareMap.has(d.postcode) && d.individuals > 100)
-      .map((d) => {
-        const w = welfareMap.get(d.postcode)!;
-        const agePension = w.payments["Age Pension"] || 0;
-        return {
-          x: d.medianTaxableIncome / 1000,
-          y: Math.round(agePension / d.individuals * 1000) / 10,
-          label: d.postcode,
-          region: getRegion(d.postcode),
-        };
-      });
-  }, [yearTax, welfareMap]);
+  const incomeVsJobseeker = regions.filter((d) => d.jobseeker > 0).map((d) => ({
+    x: Math.round(d.avgIncome / 1000),
+    y: Math.round(d.jobseeker / d.individuals * 1000) / 10,
+    label: d.region, region: d.region,
+  }));
 
-  // Govt allowances received vs tax paid (both from ATO)
-  const govtPaymentsVsTax = useMemo(() => {
-    return yearTax
-      .filter((d) => d.individuals > 100 && d.govtAllowances + d.govtPensions > 0)
-      .map((d) => ({
-        x: d.taxPaid / 1e6,
-        y: (d.govtAllowances + d.govtPensions) / 1e6,
-        label: d.postcode,
-        region: getRegion(d.postcode),
-      }));
-  }, [yearTax]);
+  const incomeVsAgePension = regions.filter((d) => d.agePension > 0).map((d) => ({
+    x: Math.round(d.avgIncome / 1000),
+    y: Math.round(d.agePension / d.individuals * 1000) / 10,
+    label: d.region, region: d.region,
+  }));
 
-  // Correlation over time
+  const govtPaymentsVsTax = regions.filter((d) => d.govtAllowances + d.govtPensions > 0).map((d) => ({
+    x: Math.round(d.taxPaid / 1e6),
+    y: Math.round((d.govtAllowances + d.govtPensions) / 1e6),
+    label: d.region, region: d.region,
+  }));
+
+  // Correlation over time (postcode-level for statistical power)
   const correlationTimeSeries = useMemo(() => {
     return TAX_YEARS.map((fy) => {
       const taxData = TAX_REVENUE_DATA.filter((d) => d.financialYear === fy);
       const matched = taxData.filter((d) => welfareMap.has(d.postcode) && d.individuals > 100);
 
-      const incomes = matched.map((d) => d.medianTaxableIncome);
+      const incomes = matched.map((d) => d.taxableIncome / d.individuals);
       const welfareRates = matched.map((d) => {
         const w = welfareMap.get(d.postcode)!;
         return w.totalRecipients / d.individuals;
@@ -126,7 +121,7 @@ export default function CorrelationsPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Deep Correlation Analysis</h1>
         <p className="text-slate-400 text-sm mt-1">
-          Statistical relationships between income, tax, and welfare across Victorian postcodes.
+          Each dot = one Victorian region (aggregated from postcodes). Hover for details.
         </p>
       </div>
 
@@ -135,28 +130,28 @@ export default function CorrelationsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ScatterPlot
           data={incomeVsWelfareRate}
-          xLabel="Avg Taxable Income ($K)"
-          yLabel="Welfare Recipients per 10 Taxpayers"
-          title={`Income vs Welfare Dependency Rate (${year})`}
+          xLabel="Avg Income ($K)"
+          yLabel="Welfare per 10 Taxpayers"
+          title={`Income vs Welfare Dependency (${year})`}
         />
         <ScatterPlot
           data={taxVsWelfareCost}
           xLabel="Tax Paid ($M)"
           yLabel="Est. Welfare Cost ($M)"
-          title={`Tax Paid vs Estimated Welfare Cost (${year})`}
+          title={`Tax Paid vs Welfare Cost (${year})`}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ScatterPlot
           data={incomeVsJobseeker}
-          xLabel="Avg Taxable Income ($K)"
+          xLabel="Avg Income ($K)"
           yLabel="JobSeeker per 10 Taxpayers"
           title={`Income vs JobSeeker Rate (${year})`}
         />
         <ScatterPlot
           data={incomeVsAgePension}
-          xLabel="Avg Taxable Income ($K)"
+          xLabel="Avg Income ($K)"
           yLabel="Age Pension per 10 Taxpayers"
           title={`Income vs Age Pension Rate (${year})`}
         />
@@ -165,7 +160,7 @@ export default function CorrelationsPage() {
       <ScatterPlot
         data={govtPaymentsVsTax}
         xLabel="Tax Paid ($M)"
-        yLabel="Govt Allowances + Pensions ($M)"
+        yLabel="Govt Payments Received ($M)"
         title={`Tax Paid vs Government Payments Received — ATO data (${year})`}
       />
 
@@ -175,16 +170,15 @@ export default function CorrelationsPage() {
           { key: "Income vs Welfare Rate", color: "#f472b6", name: "Income vs Welfare Rate" },
           { key: "Income vs JobSeeker Rate", color: "#fbbf24", name: "Income vs JobSeeker Rate" },
         ]}
-        title="Correlation Coefficients Over Time (using ATO income data per year, DSS welfare snapshot)"
+        title="Correlation Coefficients Over Time (postcode-level, DSS welfare snapshot)"
         yLabel="r"
       />
 
       <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-        <h3 className="text-sm font-medium text-slate-300 mb-2">Methodology Notes</h3>
+        <h3 className="text-sm font-medium text-slate-300 mb-2">Methodology</h3>
         <div className="text-xs text-slate-400 space-y-1">
-          <p><strong>Income data:</strong> Changes per year (ATO). <strong>Welfare data:</strong> Fixed March 2025 snapshot (DSS). The correlation over time chart shows how the relationship between income levels and welfare rates changes as incomes shift.</p>
-          <p><strong>Welfare rate</strong> = DSS payment recipients / ATO taxpayers in same postcode. This understates the true rate since DSS counts include non-taxpayers.</p>
-          <p><strong>Estimated cost</strong> uses standard 2024-25 payment rates. Actual costs vary by individual assessment.</p>
+          <p>Scatter plots aggregate postcodes into regions for readability. Correlation coefficients use postcode-level data for statistical power.</p>
+          <p><strong>Welfare rate</strong> = DSS recipients / ATO taxpayers. The correlation time series uses ATO income data per year against the DSS March 2025 snapshot.</p>
         </div>
       </div>
     </div>
