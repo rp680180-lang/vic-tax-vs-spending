@@ -131,7 +131,7 @@ export default function CorrelationsPage() {
         <ScatterPlot
           data={incomeVsWelfareRate}
           xLabel="Avg Income ($K)"
-          yLabel="Recipients per 10 Taxpayers"
+          yLabel="Welfare Recipients / 10 Taxpayers"
           title={`Income vs Welfare Dependency (${year})`}
         />
         <ScatterPlot
